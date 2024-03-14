@@ -1,0 +1,51 @@
+# .gitignore
+
+# Python virtual environment
+venv/
+
+# Byte-compiled / optimized Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+
+# Visual Studio Code settings
+.vscode/
+
+# IDE-specific files
+.idea/
+
+# Compiled source
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# CSV files and data dir
+data/
+sample/
+zips/
+certificates/
+*.csv
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
