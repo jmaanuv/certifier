@@ -19,7 +19,11 @@ __pycache__/
 .vscode/
 
 # IDE-specific files
+.idea/*
 .idea/
+.idea/Certifier.iml
+.idea/misc.xml
+
 
 # Compiled source
 *.com
