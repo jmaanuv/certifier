@@ -1,28 +1,43 @@
 import streamlit as st
 from PIL import Image
 from PIL.ImageDraw import Draw
+from PIL import ImageFont
 import matplotlib.pyplot as plt
 import pandas as pd
 from certificate_generator import generate_certificates
 import zipfile
 import os
 from random_folder import generate_random_string
+import shutil
+from datetime import datetime, timedelta
+import time
+from clear_files import file_deleter
 
 # TODO: add fonts
-# TODO: add font size
-# TODO: add initial certificate display
 
+OUTPUT_FOLDER = 'zips'
+FONT_PATH = r'.\Pacifico-Regular.ttf'
 
 if 'x_coordinate' and 'y_coordinate' and 'image' and 'certifiable_names' not in st.session_state:
     st.session_state.x_coordinate = None
     st.session_state.y_coordinate = None
+    st.session_state.font_size = None
     st.session_state.image = None
     st.session_state.certifiable_names = pd.DataFrame({})
     st.session_state.user_folder = None
 
 
+def delete_file(file_path: str) -> None:
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+
 def main_page():
     st.title('Hi, welcome to certifier.')
+    dir_name = "deletion"
+    file_name = os.path.join(dir_name, f"ok.txt")
+    open(file_name, "w").close()
+    file_deleter()
 
 
 def upload_template_page():
@@ -36,21 +51,25 @@ def upload_template_page():
                 return
             image = Image.open(uploaded_file)
             width, height = image.size
-            # x_coordinate = st.slider('Select X-coordinate', 0, width - 1, width // 2)
-            # y_coordinate = st.slider('Select Y-coordinate', 0, height - 1, height // 2)
-            x_coordinate = st.slider('Select X-coordinate', 0, width - 1, 633)
-            y_coordinate = st.slider('Select Y-coordinate', 0, height - 1, 654)
+            x_coordinate = st.slider('Select X-coordinate', 0, width - 1, width // 2)
+            y_coordinate = st.slider('Select Y-coordinate', 0, height - 1, height // 2)
+            # x_coordinate = st.slider('Select X-coordinate', 0, width - 1, 633)
+            # y_coordinate = st.slider('Select Y-coordinate', 0, height - 1, 654)
+            height_of_font = st.slider('Select Font size', 0, 200, 100)
             fig, ax = plt.subplots()
             ax.imshow(image)
             draw = Draw(image)
-            draw.rectangle([x_coordinate - 5, y_coordinate - 5, x_coordinate + 5, y_coordinate + 5],
-                           outline='red', width=2)
+            font = ImageFont.truetype(FONT_PATH, height_of_font)
+            draw.text((x_coordinate, y_coordinate), 'Lorem Ipusium', (35, 57, 75), font=font)
+            # draw.rectangle([x_coordinate - 5, y_coordinate - 5, x_coordinate + 5, y_coordinate + 5],
+            #                outline='red', width=2)
             st.image(image, caption='Select starting position for names', use_column_width=True)
             next_button = st.button('Confirm Template ✅')
             if next_button:
                 st.write('template confirmed please move to next step ✅✅')
                 st.session_state.x_coordinate = x_coordinate
                 st.session_state.y_coordinate = y_coordinate
+                st.session_state.font_size = height_of_font
                 st.session_state.image = uploaded_file
     else:
         st.title('Selected template ')
@@ -96,14 +115,17 @@ def generate_certificate_page():
         generate_button = st.button('Generate certificates')
         if generate_button:
             # TODO: check if already exist
-            # TODO: add progress bar
             user_folder = generate_random_string()
             st.session_state.user_folder = user_folder
             template = st.session_state['image']
             x_coordinate = st.session_state['x_coordinate']
             y_coordinate = st.session_state['y_coordinate']
             names = st.session_state['certifiable_names']
-            generate_certificates(template, x_coordinate, y_coordinate, names, user_folder)
+            font_size = st.session_state['font_size']
+            total_names = names.shape[0]
+            progress_bar = st.progress(0)
+            generate_certificates(template, x_coordinate, y_coordinate, names, user_folder, progress_bar, total_names, font_size)
+            progress_bar.empty()
             st.balloons()
             st.success('Certificates generated! 🥳')
             st.write('proceed to download page to download certificates')
@@ -122,22 +144,22 @@ def create_zip(images_folder, zip_file_name, output_folder):
 def download_the_zip_page():
     st.title('🌟 Download all the certificates 🌟')
     user_folder = st.session_state['user_folder']
-    output_folder = 'zips'
-
-    if st.button('Create Zip'):
+    certificates_folder = rf'.\certificates\{user_folder}'
+    create_zip_button = st.button('Create Zip')
+    if create_zip_button:
         if not os.path.exists(rf'.\certificates\{user_folder}'):
             st.warning('No images generated yet!')
         else:
-            if not os.path.exists(output_folder):
-                os.makedirs(output_folder)
-            # TODO: add generate zip functionality in generate certificates
-            # TODO: add a check for zips folder not existing
-            create_zip(rf'.\certificates\{user_folder}', f'{user_folder}.zip', output_folder)
+            if not os.path.exists(OUTPUT_FOLDER):
+                os.makedirs(OUTPUT_FOLDER)
+            create_zip(certificates_folder, f'{user_folder}.zip', OUTPUT_FOLDER)
             st.success('Images zipped successfully! Click below to download.')
-            with open(os.path.join(output_folder, f'{user_folder}.zip'), 'rb') as f:
+            shutil.rmtree(certificates_folder)
+            with open(os.path.join(OUTPUT_FOLDER, f'{user_folder}.zip'), 'rb') as f:
                 bytes_data = f.read()
-            st.download_button(label='Download', data=bytes_data, file_name=rf'.\zips\{user_folder}.zip',
-                               mime='application/zip')
+            st.download_button(label='Download', data=bytes_data,
+                                                 file_name=rf'.\zips\{user_folder}.zip', mime='application/zip')
+            delete_file(rf'.\zips\{user_folder}.zip')
 
 
 page_names_to_funcs = {
