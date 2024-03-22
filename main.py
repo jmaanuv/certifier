@@ -34,9 +34,6 @@ def delete_file(file_path: str) -> None:
 
 def main_page():
     st.title('Hi, welcome to certifier.')
-    dir_name = "deletion"
-    file_name = os.path.join(dir_name, f"ok.txt")
-    open(file_name, "w").close()
     file_deleter()
 
 
